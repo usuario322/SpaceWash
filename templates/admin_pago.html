@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<div class="container mt-4">
+
+    <div class="card shadow-lg border-0">
+        <div class="card-header text-white" style="background-color:#2B2E74;">
+            <h4 class="m-0">💰 Seleccione el método de pago</h4>
+        </div>
+
+        <div class="card-body">
+
+            <form method="POST" action="/admin/cobro/pago/{{ tipo_id }}">
+
+                <!-- Método de pago -->
+                <label class="form-label fw-bold">Método</label>
+                <select name="pago" id="pagoSelect" class="form-select shadow-sm" required>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                </select>
+
+                <!-- FORMULARIO FALSO PARA TARJETA -->
+                <div id="tarjetaForm" class="mt-4 p-3 rounded shadow-sm border" style="display:none;">
+                    <h5 class="fw-bold" style="color:#2B2E74;">💳 Pago con tarjeta</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label">Número de tarjeta</label>
+                        <input type="text" class="form-control" placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Expiración</label>
+                            <input type="text" class="form-control" placeholder="MM/AA" maxlength="5">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">CVV</label>
+                            <input type="text" class="form-control" placeholder="XXX" maxlength="3">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Titular</label>
+                        <input type="text" class="form-control" placeholder="Nombre del titular">
+                    </div>
+
+                    <div class="alert alert-warning p-2 mt-2">
+                        ⚠ Este formulario es solo demostrativo, no procesa datos reales.
+                    </div>
+                </div>
+
+                <!-- Botón siguiente -->
+                <button class="btn mt-3 shadow" style="background-color:#FED353; color:#2B2E74; font-weight:bold;">
+                    Siguiente
+                </button>
+
+            </form>
+
+        </div>
+    </div>
+
+    <a href="/admin" class="btn btn-secondary mt-3 shadow-sm">
+        ⬅ Volver al menú
+    </a>
+
+</div>
+
+<!-- JS SIMPLE PARA MOSTRAR FORMULARIO -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const select = document.getElementById("pagoSelect");
+    const tarjetaForm = document.getElementById("tarjetaForm");
+
+    select.addEventListener("change", function () {
+        if (select.value === "tarjeta") {
+            tarjetaForm.style.display = "block";
+        } else {
+            tarjetaForm.style.display = "none";
+        }
+    });
+});
+</script>
+
+{% endblock %}

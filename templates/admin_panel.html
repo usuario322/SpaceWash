@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    body {
+        background-color: #f2f2f6;
+    }
+
+    .panel-container {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 5px 18px rgba(0,0,0,0.15);
+        border-top: 8px solid #FED353;
+        position: relative;
+    }
+
+    .panel-title {
+        color: #2B2E74;
+        font-weight: bold;
+    }
+
+    /* LOGO EN ESQUINA */
+    .role-logo {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        width: 80px;
+    }
+
+    /* Botones principales */
+    .panel-btn {
+        width: 100%;
+        margin-bottom: 12px;
+        font-weight: bold;
+        padding: 12px;
+    }
+
+    /* Azul principal */
+    .btn-primary-custom {
+        background-color: #2B2E74 !important;
+        color: white !important;
+        border: none;
+    }
+    .btn-primary-custom:hover {
+        background-color: #000000 !important;
+    }
+
+    /* Amarillo para funciones destacadas */
+    .btn-yellow {
+        background-color: #FED353 !important;
+        color: black !important;
+        border: none;
+    }
+    .btn-yellow:hover {
+        background-color: #e2bd46 !important;
+    }
+
+    /* Botones secundarios: cerrar sesión, volver, etc */
+    .secondary-actions {
+        text-align: right;
+        margin-top: 25px;
+        border-top: 1px solid #ddd;
+        padding-top: 15px;
+    }
+
+    .btn-secondary-custom {
+        background-color: #dddddd !important;
+        color: #333 !important;
+        border: none;
+        font-weight: bold;
+    }
+    .btn-secondary-custom:hover {
+        background-color: #bbbbbb !important;
+    }
+
+    /* Pie de página */
+    .footer-copy {
+        margin-top: 50px;
+        text-align: center;
+        color: #777;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="panel-container">
+
+        <!-- Logo -->
+        <img src="/static/img/logo.png" class="role-logo">
+
+        <h2 class="panel-title">Administrador</h2>
+        <p>Bienvenido, {{ nombre }}.</p>
+        <hr>
+
+        <!-- BOTONES PRINCIPALES -->
+        <a class="btn btn-primary-custom panel-btn" href="/admin/cobro">Cobrar servicio</a>
+        <a class="btn btn-primary-custom panel-btn" href="/admin/vehiculos">Lista de vehículos</a>
+        <a class="btn btn-primary-custom panel-btn" href="/admin/entregas">Entregar vehículos</a>
+        <a class="btn btn-primary-custom panel-btn" href="/reportes/movimientos">Reporte de empleados</a>
+
+        <!-- ACCIONES SECUNDARIAS -->
+        <div class="secondary-actions">
+            <a href="/logout" class="btn btn-secondary-custom">Cerrar sesión</a>
+        </div>
+    </div>
+
+    <div class="footer-copy">
+        © 2025 Soft-Water. Todos los derechos reservados.
+    </div>
+</div>
+
+{% endblock %}

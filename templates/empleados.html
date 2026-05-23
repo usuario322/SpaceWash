@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .card-lista {
+        background: #fff;
+        padding: 25px;
+        border-radius: 15px;
+        border-left: 6px solid #2B2E74;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin: 25px auto;
+        max-width: 1200px;
+    }
+
+    h3 {
+        color: #2B2E74;
+        font-weight: bold;
+    }
+
+    .table thead {
+        background: #2B2E74;
+        color: white;
+    }
+
+    .btn-danger {
+        background: #d9534f;
+        border: none;
+    }
+
+    .btn-reactivar {
+        background: #FED353;
+        color: #2B2E74;
+        font-weight: bold;
+        border: none;
+    }
+
+    .btn-reactivar:hover {
+        background: #e4be49;
+    }
+
+    .btn-toggle {
+        background: #2B2E74;
+        color: white;
+        border: none;
+        margin-top: 20px;
+    }
+
+    .btn-toggle:hover {
+        background: #1f2259;
+    }
+
+    .btn-back {
+        background: #2B2E74;
+        color: white;
+        width: 100%;
+        text-align: center;
+        padding: 10px;
+        border-radius: 10px;
+        margin-top: 25px;
+        display: block;
+        text-decoration: none;
+        transition: .2s;
+    }
+
+    .btn-back:hover {
+        background: #1f2259;
+    }
+
+</style>
+
+<div class="card-lista">
+
+    <h3>Lista de Empleados Activos</h3>
+
+    <table class="table table-bordered mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Rol</th>
+                <th>Usuario</th>
+                <th>Contraseña</th>
+                <th>Entrada</th>
+                <th>Salida</th>
+                <th>Comida</th>
+                <th>Días de descanso</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for emp in empleados %}
+            <tr>
+                <td>{{ emp.id }}</td>
+                <td>{{ emp.nombre }}</td>
+                <td>{{ emp.rol }}</td>
+                <td>{{ emp.usuario }}</td>
+                <td>{{ emp.password }}</td>
+
+                <td>{{ emp.hora_entrada if emp.hora_entrada else "No asignado" }}</td>
+                <td>{{ emp.hora_salida if emp.hora_salida else "No asignado" }}</td>
+                <td>{{ emp.hora_comida if emp.hora_comida else "No asignado" }}</td>
+                <td>{{ emp.dias_descanso if emp.dias_descanso else "No asignado" }}</td>
+
+                <td>
+                    <a href="/jefe/dar_baja/{{ emp.id }}"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('¿Deseas dar de baja a este empleado?');">
+                       Dar de baja
+                    </a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- BOTÓN PARA MOSTRAR/OCULTAR BAJAS -->
+    <button onclick="toggleBajas()" class="btn btn-toggle">
+        Mostrar empleados dados de baja
+    </button>
+
+    <!-- EMPLEADOS DADOS DE BAJA -->
+    <div id="bajas" style="display:none; margin-top:20px;">
+        <h3>Empleados dados de baja</h3>
+
+        {% if empleados_baja and empleados_baja|length > 0 %}
+        <table class="table mt-3">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Reactivar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in empleados_baja %}
+                <tr>
+                    <td>{{ e.nombre }}</td>
+                    <td>{{ e.usuario }}</td>
+                    <td>{{ e.rol }}</td>
+                    <td>
+                        <a href="/jefe/reactivar/{{ e.id }}" class="btn btn-reactivar btn-sm">
+                            Reactivar
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% else %}
+            <p>No hay empleados dados de baja.</p>
+        {% endif %}
+    </div>
+
+    <script>
+    function toggleBajas() {
+        let div = document.getElementById('bajas');
+        div.style.display = (div.style.display === "none") ? "block" : "none";
+    }
+    </script>
+
+    <!-- BOTÓN VOLVER -->
+    <a href="/jefe" class="btn-back">Regresar al menú</a>
+
+</div>
+
+{% endblock %}
+

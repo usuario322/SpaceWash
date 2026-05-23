@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    body {
+        background-color: #f2f2f6;
+    }
+
+    .panel-container {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 5px 18px rgba(0,0,0,0.15);
+        border-top: 8px solid #FED353;
+        position: relative;
+        max-width: 600px;
+        margin: auto;
+    }
+
+    .panel-title {
+        color: #2B2E74;
+        font-weight: bold;
+    }
+
+    /* Logo */
+    .role-logo {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 70px;
+    }
+
+    /* Botones principales */
+    .panel-btn {
+        width: 100%;
+        margin-bottom: 12px;
+        font-weight: bold;
+        padding: 12px;
+        font-size: 1rem;
+    }
+
+    .btn-primary-custom {
+        background-color: #2B2E74 !important;
+        color: white !important;
+        border: none;
+    }
+    .btn-primary-custom:hover {
+        background-color: #000000 !important;
+    }
+
+    .btn-yellow {
+        background-color: #FED353 !important;
+        color: black !important;
+        border: none;
+    }
+    .btn-yellow:hover {
+        background-color: #e2bd46 !important;
+    }
+
+    /* Sección de acciones secundarias */
+    .secondary-actions {
+        text-align: center;
+        margin-top: 25px;
+        padding-top: 15px;
+        border-top: 1px solid #ddd;
+    }
+
+    .btn-secondary-custom {
+        background-color: #dddddd !important;
+        color: #333 !important;
+        border: none;
+        font-weight: bold;
+        width: 100%;
+        padding: 10px;
+    }
+    .btn-secondary-custom:hover {
+        background-color: #bbbbbb !important;
+    }
+
+    /* Footer */
+    .footer-copy {
+        margin-top: 40px;
+        text-align: center;
+        color: #777;
+        font-size: 0.9rem;
+    }
+
+    /* MOBILE RESPONSIVE */
+    @media (max-width: 480px) {
+        .panel-container {
+            padding: 18px;
+        }
+
+        .panel-title {
+            font-size: 1.3rem;
+        }
+
+        .panel-btn {
+            font-size: 0.95rem;
+        }
+
+        .role-logo {
+            width: 55px;
+        }
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="panel-container">
+
+        <!-- Logo -->
+        <img src="/static/img/logo.png" class="role-logo">
+
+        <h2 class="panel-title">Empleado Operativo</h2>
+        <p>Bienvenido, {{ nombre }}.</p>
+        <hr>
+
+        <!-- BOTONES PRINCIPALES -->
+        <a href="/operativo/vehiculos" class="btn btn-primary-custom panel-btn">
+            Cambiar estatus de vehículos
+        </a>
+
+        <a href="/operativo/empleados_horarios" class="btn btn-yellow panel-btn">
+            Ver horarios de empleados
+        </a>
+
+        <!-- ACCIONES SECUNDARIAS -->
+        <div class="secondary-actions">
+            <a href="/logout" class="btn btn-secondary-custom">
+                Cerrar sesión
+            </a>
+        </div>
+    </div>
+
+    <div class="footer-copy">
+        © 2025 Soft-Water. Todos los derechos reservados.
+    </div>
+</div>
+
+{% endblock %}
+

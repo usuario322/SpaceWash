@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>Estadísticas de Vehículos</h3>
+
+<h4>Conteo por tipo de vehículo</h4>
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Tipo de vehículo</th>
+        <th>Total</th>
+    </tr>
+    {% for t in totales_tipo %}
+    <tr>
+        <td>{{ t.tipo }}</td>
+        <td>{{ t.total }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<h4>Conteo por tipo y fecha</h4>
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Fecha</th>
+        <th>Tipo de vehículo</th>
+        <th>Total</th>
+    </tr>
+    {% for f in totales_fecha %}
+    <tr>
+        <td>{{ f.fecha }}</td>
+        <td>{{ f.tipo }}</td>
+        <td>{{ f.total }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<br>
+<a href="/menu_jefe">Volver al menú</a>
+
+{% endblock %}

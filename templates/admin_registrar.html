@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<div class="container mt-4">
+
+    <div class="card shadow-lg border-0">
+        <div class="card-header text-white" style="background-color:#2B2E74;">
+            <h4 class="m-0">🚗 Registro de vehículo</h4>
+        </div>
+
+        <div class="card-body">
+
+            <div class="p-3 rounded mb-3" style="background-color:#f8f9fa;">
+                <p class="m-0"><strong>Prioridad:</strong> {{ prioridad }}</p>
+                <p class="m-0"><strong>Tipo:</strong> {{ tipo_nombre }}</p>
+                <p class="m-0">
+                    <strong>Precio aplicado hoy:</strong> ${{ precio_final }}
+                    {% if promocion_hoy %}
+                        <span class="text-danger fw-bold"> 🔥 (Promoción del día) </span>
+                    {% endif %}
+                </p>
+            </div>
+
+            <form method="POST" action="/admin/registrar/{{ tipo_id }}">
+
+                <label class="form-label fw-bold">Propietario</label>
+                <input name="propietario" class="form-control shadow-sm" required>
+
+                <label class="form-label fw-bold mt-3">CURP</label>
+                <input name="curp" class="form-control shadow-sm" required maxlength="18">
+
+                <label class="form-label fw-bold mt-3">Placas</label>
+                <input name="placas" class="form-control shadow-sm" required>
+
+                <label class="form-label fw-bold mt-3">Modelo</label>
+                <input name="modelo" class="form-control shadow-sm" required>
+
+                <button class="btn mt-4 px-4 shadow"
+                        style="background-color:#FED353; color:#2B2E74; font-weight:bold;">
+                    Registrar vehículo
+                </button>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+

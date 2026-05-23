@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow-lg border-0">
+        <div class="card-header text-white" style="background-color:#2B2E74;">
+            <h4 class="m-0">📋 Reporte de Movimientos</h4>
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+
+                    <thead style="background-color:#FED353; color:#2B2E74; font-weight:bold;">
+                        <tr>
+                            <th>ID</th>
+                            <th>Propietario</th>
+                            <th>Placas</th>
+                            <th>Modelo</th>
+                            <th>Tipo</th>
+                            <th>Empleado</th>
+                            <th>Estatus</th>
+                            <th>Fecha / Hora</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for m in movimientos %}
+                        <tr>
+                            <td>{{ m.id }}</td>
+                            <td>{{ m.propietario }}</td>
+                            <td>{{ m.placas }}</td>
+                            <td>{{ m.modelo }}</td>
+                            <td>{{ m.tipo_vehiculo }}</td>
+                            <td>{{ m.empleado }}</td>
+                            <td>{{ m.estatus }}</td>
+                            <td>{{ m.fecha_hora }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+
+            <!-- Botón PDF -->
+            <a href="/reportes/movimientos/pdf" 
+               class="btn mt-3 shadow-sm"
+               style="background-color:#FED353; color:#2B2E74; font-weight:bold;">
+               ⬇ Exportar a PDF
+            </a>
+
+        </div>
+    </div>
+
+
+</div>
+
+{% endblock %}

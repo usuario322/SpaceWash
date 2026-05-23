@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4 p-4"
+     style="background:white; border-radius:18px; box-shadow:0 4px 12px rgba(0,0,0,0.12);">
+
+    <h3 class="mb-4 p-3 text-center text-white"
+        style="background:#2B2E74; border-radius:12px;">
+        Vehículos en el Autolavado
+    </h3>
+
+    <!-- Contenedor responsivo -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped"
+               style="border-color:#2B2E74; border-radius:12px; overflow:hidden; min-width:700px;">
+
+            <thead style="background:#fed353; color:#2B2E74; font-weight:bold; text-align:center;">
+                <tr>
+                    <th>ID</th>
+                    <th>Propietario</th>
+                    <th>Placas</th>
+                    <th>Modelo</th>
+                    <th>Tipo</th>
+                    <th>Estatus</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            {% for v in vehiculos %}
+            <tr>
+                <td class="fw-bold">{{ v.id }}</td>
+                <td>{{ v.propietario }}</td>
+                <td>{{ v.placas }}</td>
+                <td>{{ v.modelo }}</td>
+                <td>{{ v.tipo_vehiculo }}</td>
+
+                <td class="
+                    {% if v.estatus == 'listo para entregar' %}estatus-listo
+                    {% elif v.estatus == 'en lavado' %}estatus-lavado
+                    {% else %}estatus-otro{% endif %}
+                ">
+                    {{ v.estatus }}
+                </td>
+
+                <td>
+                    <form method="POST"
+                          action="/operativo/vehiculos/cambiar"
+                          onsubmit="return confirmarCambio(this);"
+                          class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
+
+                        <input type="hidden" name="vehiculo_id" value="{{ v.id }}">
+
+                        <select name="estatus"
+                                class="form-select"
+                                style="border:2px solid #fed353; border-radius:8px; min-width:120px;">
+                            <option value="en espera"
+                                {% if v.estatus == 'en espera' %}selected{% endif %}>
+                                En espera
+                            </option>
+                            <option value="en lavado"
+                                {% if v.estatus == 'en lavado' %}selected{% endif %}>
+                                En lavado
+                            </option>
+                            <option value="listo para entregar"
+                                {% if v.estatus == 'listo para entregar' %}selected{% endif %}>
+                                Listo para entregar
+                            </option>
+                        </select>
+
+                        <button type="submit"
+                                class="btn text-dark"
+                                style="background:#fed353; font-weight:bold; border-radius:10px; padding:6px 10px; min-width:100px;">
+                            Actualizar
+                        </button>
+
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="/operativo"
+           class="btn text-white px-5 py-2"
+           style="background:#2B2E74; border-radius:12px;">
+            Volver al menú
+        </a>
+    </div>
+</div>
+
+<script>
+function confirmarCambio(form) {
+    const select = form.querySelector('select[name="estatus"]');
+    if (select.value === 'listo para entregar') {
+        return confirm("¿Estás seguro que quieres cambiar el estatus a 'listo para entregar'? Esto notificará al administrador.");
+    }
+    return true;
+}
+</script>
+
+<style>
+/* Ajustes responsive para móviles */
+@media (max-width: 768px) {
+    .table td, .table th {
+        font-size: 0.85rem;
+        padding: 6px 4px;
+    }
+    form.d-flex.flex-wrap select,
+    form.d-flex.flex-wrap button {
+        flex: 1 1 100%;
+        min-width: auto;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+}
+</style>
+
+{% endblock %}

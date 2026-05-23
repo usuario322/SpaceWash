@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<div class="container mt-4">
+
+    <div class="card shadow-lg border-0">
+        <div class="card-header text-white" style="background-color:#2B2E74;">
+            <h4 class="m-0">🚘 Vehículos listos para entregar</h4>
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+
+                    <thead style="background-color:#FED353; color:#2B2E74; font-weight:bold;">
+                        <tr>
+                            <th>Propietario</th>
+                            <th>Placas</th>
+                            <th>Modelo</th>
+                            <th>Tipo</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for v in vehiculos %}
+                        <tr>
+                            <td>{{ v.propietario }}</td>
+                            <td>{{ v.placas }}</td>
+                            <td>{{ v.modelo }}</td>
+                            <td>{{ v.tipo }}</td>
+
+                            <td>
+                                <form action="/admin/entregar/{{ v.id }}" method="POST" class="d-inline">
+                                    <button class="btn btn-success btn-sm shadow-sm">
+                                        ✔ Entregar
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <a href="/admin" class="btn btn-secondary mt-3 shadow-sm">⬅ Volver al menú</a>
+
+</div>
+
+{% endblock %}
+

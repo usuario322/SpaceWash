@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4 p-4 rounded shadow"
+     style="background: #ffffff; border-radius: 16px;">
+
+    <h3 class="p-3 text-white rounded"
+        style="background: #2B2E74;">
+        Historial semanal – {{ tipo.tipo }}
+    </h3>
+
+    <h5 class="mt-3 mb-4" style="color:#2B2E74;">
+        Semana iniciada el <strong>{{ start_week }}</strong>
+    </h5>
+
+    <div class="d-flex gap-3 mb-4">
+
+        <a class="btn text-dark px-4 py-2"
+           style="background: #fed353; font-weight:bold; border-radius:10px;"
+           href="?week={{ prev_week }}">
+            ⬅ Semana anterior
+        </a>
+
+        <a class="btn text-dark px-4 py-2"
+           style="background: #fed353; font-weight:bold; border-radius:10px;"
+           href="?week={{ next_week }}">
+            Semana siguiente ➡
+        </a>
+
+    </div>
+
+    <table class="table table-bordered shadow-sm" style="border-color:#2B2E74;">
+        <thead style="background:#2B2E74; color:white;">
+            <tr>
+                <th>Día</th>
+                <th>Fecha</th>
+                <th>Total ingresos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in semana %}
+            <tr>
+                <td style="color:#2B2E74; font-weight:bold;">{{ d.dia }}</td>
+                <td>{{ d.fecha }}</td>
+                <td>{{ d.total }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Botón volver ABAJO Y CENTRADO -->
+    <div class="text-center mt-5">
+        <a href="/jefe/historial"
+           class="btn px-5 py-2 text-white"
+           style="background:#2B2E74; border-radius:12px;">
+            Volver
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}

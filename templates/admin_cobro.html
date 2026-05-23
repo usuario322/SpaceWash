@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    .card-header-custom {
+        background-color: #2B2E74 !important;
+        color: white !important;
+    }
+    .btn-main {
+        background-color: #2B2E74;
+        color: white;
+        border-radius: 8px;
+    }
+    .btn-main:hover {
+        background-color: #1d205a;
+        color: white;
+    }
+    .btn-back {
+        background-color: #fed353;
+        color: #2B2E74;
+        border-radius: 8px;
+        font-weight: bold;
+    }
+    .btn-back:hover {
+        background-color: #f1c634;
+        color: #2B2E74;
+    }
+    .promo-alert {
+        border-left: 6px solid #fed353 !important;
+    }
+    .promo-item {
+        border-left: 6px solid #2B2E74 !important;
+    }
+</style>
+
+<div class="container mt-4">
+
+    <div class="card shadow-lg border-0">
+        
+        <!-- Encabezado con tu color azul -->
+        <div class="card-header card-header-custom">
+            <h4 class="m-0">💳 Cobro - Selección del vehículo</h4>
+        </div>
+
+        <div class="card-body">
+
+            <form method="POST" action="/admin/cobro">
+
+                <!-- Selector de vehículo -->
+                <label class="form-label fw-bold">Tipo de vehículo</label>
+
+                <select name="tipo" class="form-select shadow-sm border-secondary" required>
+                    {% for t in tipos %}
+                        <option value="{{ t.id }}">
+                            {{ t.tipo }} — Precio: ${{ t.precio_final }}
+                            {% if t.promo_activa %} 🔥 (Promo hoy) {% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <!-- MENSAJE GENERAL SI HAY PROMO -->
+                {% set hay_promos = false %}
+                {% for t in tipos %}
+                    {% if t.promo_activa %}
+                        {% set hay_promos = true %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if hay_promos %}
+                    <div class="alert promo-alert mt-3 shadow-sm">
+                        🔔 <strong>¡Hoy hay promociones activas en algunos vehículos!</strong>
+                    </div>
+                {% endif %}
+
+                <!-- ALERTAS INDIVIDUALES -->
+                {% for t in tipos %}
+                    {% if t.promo_activa %}
+                        <div class="alert promo-item mt-2 shadow-sm">
+                            <strong>🔥 {{ t.tipo }}</strong> tiene precio promocional hoy:
+                            <span class="fw-bold text-dark">${{ t.precio_final }}</span>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- BOTÓN PRINCIPAL -->
+                <button class="btn btn-main mt-3 shadow">
+                    Continuar
+                </button>
+
+            </form>
+
+        </div>
+    </div>
+
+    <!-- BOTÓN VOLVER ABAJO SEPARADO -->
+    <a href="/admin" class="btn btn-secondary mt-3 shadow-sm">⬅ Volver al menú</a>
+
+
+</div>
+
+{% endblock %}
+

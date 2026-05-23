@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    /* Tarjeta principal */
+    .card-registro {
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 15px;
+        max-width: 600px;
+        margin: 20px auto;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.10);
+        border-left: 6px solid #2B2E74;
+    }
+
+    /* Título */
+    .titulo-registro {
+        font-weight: bold;
+        color: #2B2E74;
+        margin-bottom: 20px;
+    }
+
+    /* Inputs */
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 2px solid #ddd;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #2B2E74;
+        box-shadow: 0 0 5px rgba(43,46,116,0.4);
+    }
+
+    /* Botón principal */
+    .btn-registrar {
+        background-color: #FED353;
+        border: none;
+        color: #2B2E74;
+        font-weight: bold;
+        padding: 10px 16px;
+        border-radius: 10px;
+        transition: 0.2s;
+        display: block;
+    }
+    .btn-registrar:hover {
+        background-color: #e4be49;
+    }
+
+    /* Botón secundario abajo */
+    .btn-volver {
+        background: #2B2E74;
+        color: white;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        margin-top: 20px;
+        transition: 0.2s;
+    }
+
+    .btn-volver:hover {
+        background: #1f2259;
+    }
+</style>
+
+<div class="card-registro">
+    <h3 class="titulo-registro">Registro de empleado</h3>
+
+    <form method="POST" action="/jefe/registro_empleado">
+
+        <div class="mb-3">
+            <label class="form-label">Nombre completo</label>
+            <input type="text" name="nombre" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">CURP</label>
+            <input type="text" name="curp" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Rol</label>
+            <select name="rol" class="form-select" required>
+                <option value="administrador">Administrador</option>
+                <option value="operativo">Empleado operativo</option>
+            </select>
+        </div>
+
+        <button class="btn btn-registrar">Registrar empleado</button>
+    </form>
+
+    <!-- Botón al final -->
+    <a href="/jefe" class="btn-volver">Volver al menú</a>
+</div>
+
+{% endblock %}

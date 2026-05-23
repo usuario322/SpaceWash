@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .card-historial {
+        background: #fff;
+        padding: 25px;
+        border-radius: 15px;
+        border-left: 6px solid #2B2E74;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin: 25px auto;
+        max-width: 900px;
+    }
+
+    h3 {
+        color: #2B2E74;
+        font-weight: bold;
+    }
+
+    .table thead {
+        background: #2B2E74;
+        color: white;
+    }
+
+    .btn-primary {
+        background: #FED353;
+        color: #2B2E74;
+        font-weight: bold;
+        border: none;
+    }
+    .btn-primary:hover {
+        background: #e4be49;
+    }
+
+    .btn-back {
+        background: #2B2E74;
+        color: white;
+        width: 100%;
+        text-align: center;
+        padding: 10px;
+        border-radius: 10px;
+        display: block;
+        margin-top: 25px;
+        text-decoration: none;
+        transition: .2s;
+    }
+    .btn-back:hover {
+        background: #1f2259;
+    }
+</style>
+
+<div class="card-historial">
+
+    <h3>Historial de Vehículos</h3>
+
+    {% if mensaje %}
+        <p><strong>{{ mensaje }}</strong></p>
+
+    {% else %}
+
+    <table class="table table-bordered mt-3">
+        <thead>
+        <tr>
+            <th>Tipo</th>
+            <th>Total ingresos</th>
+            <th>Ver semanas</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        {% for t in tipos %}
+        <tr>
+            <td>{{ t.tipo }}</td>
+            <td>{{ t.total }}</td>
+            <td>
+                <a class="btn btn-primary btn-sm"
+                   href="/jefe/historial/vehiculo/{{ t.id }}">
+                    Ver historial semanal
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% endif %}
+
+    <a href="/jefe" class="btn-back">Volver al menú</a>
+
+</div>
+
+{% endblock %}
+

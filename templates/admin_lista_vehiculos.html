@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<div class="container mt-4">
+
+    <div class="card shadow-lg border-0">
+        <div class="card-header text-white" style="background-color:#2B2E74;">
+            <h4 class="m-0">🚗 Vehículos en el autolavado</h4>
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+
+                    <thead style="background-color:#FED353; color:#2B2E74; font-weight:bold;">
+                        <tr>
+                            <th>Prioridad</th>
+                            <th>Propietario</th>
+                            <th>CURP</th>
+                            <th>Placas</th>
+                            <th>Modelo</th>
+                            <th>Tipo</th>
+                            <th>Estatus</th>
+                            <th>Ingreso</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for v in vehiculos %}
+                        <tr>
+                            <td><span class="badge bg-primary">{{ v.prioridad }}</span></td>
+                            <td>{{ v.propietario }}</td>
+                            <td>{{ v.curp }}</td>
+                            <td>{{ v.placas }}</td>
+                            <td>{{ v.modelo }}</td>
+                            <td>{{ v.tipo }}</td>
+                            <td>
+                                {% if v.estatus == "En espera" %}
+                                    <span class="badge bg-warning text-dark">En espera</span>
+                                {% elif v.estatus == "En lavado" %}
+                                    <span class="badge bg-info text-dark">En lavado</span>
+                                {% elif v.estatus == "Terminado" %}
+                                    <span class="badge bg-success">Terminado</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ v.estatus }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ v.fecha_ingreso }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <a href="/admin" class="btn btn-secondary mt-3 shadow-sm">⬅ Volver al menú</a>
+
+</div>
+
+{% endblock %}

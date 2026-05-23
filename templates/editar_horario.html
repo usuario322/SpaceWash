@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .card-horario {
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 15px;
+        max-width: 650px;
+        margin: 25px auto;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.10);
+        border-left: 6px solid #2B2E74;
+    }
+
+    .titulo-horario {
+        font-weight: bold;
+        color: #2B2E74;
+        margin-bottom: 15px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #2B2E74;
+    }
+
+    .btn-guardar {
+        background-color: #FED353;
+        color: #2B2E74;
+        border: none;
+        font-weight: bold;
+        padding: 10px 18px;
+        border-radius: 8px;
+        transition: 0.2s;
+    }
+
+    .btn-guardar:hover {
+        background-color: #e4be49;
+    }
+
+    .btn-volver {
+        background: #2B2E74;
+        color: white;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        margin-top: 20px;
+        transition: 0.2s;
+    }
+
+    .btn-volver:hover {
+        background: #1f2259;
+    }
+</style>
+
+<div class="card-horario">
+
+    <h3 class="titulo-horario">Horario de {{ empleado.nombre }}</h3>
+
+    <form action="/jefe/horarios/guardar" method="POST">
+
+        <input type="hidden" name="usuario_id" value="{{ empleado.id }}">
+
+        <div class="mb-3">
+            <label class="form-label">Hora de entrada:</label>
+            <input type="time" name="hora_entrada" class="form-control" required
+                value="{{ horario.hora_entrada if horario else '' }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Hora de salida:</label>
+            <input type="time" name="hora_salida" class="form-control" required
+                value="{{ horario.hora_salida if horario else '' }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Hora para tomar comida:</label>
+            <input type="time" name="hora_comida" class="form-control" required
+                value="{{ horario.hora_comida if horario else '' }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Día de descanso:</label>
+            <select name="dia_descanso" class="form-control" required>
+                <option value="">Seleccionar...</option>
+                {% for d in ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"] %}
+                    <option value="{{ d }}"
+                        {% if horario and horario.dias_descanso == d %} selected {% endif %}>
+                        {{ d }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn-guardar">Guardar</button>
+    </form>
+
+    <a href="/jefe/horarios" class="btn-volver">Volver</a>
+</div>
+
+{% endblock %}
+

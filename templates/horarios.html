@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .card-horarios {
+        background: #ffffff;
+        padding: 25px;
+        border-radius: 15px;
+        max-width: 700px;
+        margin: 20px auto;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.10);
+        border-left: 6px solid #2B2E74;
+    }
+
+    .titulo-horarios {
+        font-weight: bold;
+        color: #2B2E74;
+        margin-bottom: 10px;
+    }
+
+    .subtexto {
+        font-size: 15px;
+        color: #555;
+        margin-bottom: 20px;
+    }
+
+    .list-group-item {
+        border-radius: 10px !important;
+        margin-bottom: 8px;
+        border: 2px solid #e7e7e7;
+        transition: 0.2s;
+    }
+
+    .list-group-item:hover {
+        background-color: #f6faff;
+        border-color: #2B2E74;
+    }
+
+    .btn-editar {
+        background-color: #FED353;
+        border: none;
+        color: #2B2E74;
+        font-weight: bold;
+        border-radius: 8px;
+        padding: 6px 12px;
+        transition: 0.2s;
+    }
+
+    .btn-editar:hover {
+        background-color: #e4be49;
+    }
+
+    .btn-volver {
+        background: #2B2E74;
+        color: white;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        margin-top: 20px;
+        transition: 0.2s;
+    }
+
+    .btn-volver:hover {
+        background: #1f2259;
+    }
+</style>
+
+<div class="card-horarios">
+    <h3 class="titulo-horarios">Gestión de horarios de empleados</h3>
+    <p class="subtexto">Selecciona un empleado para editar su horario.</p>
+
+    <ul class="list-group mt-3">
+        {% for emp in empleados %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <strong>{{ emp.nombre }}</strong> 
+            <span class="text-muted">({{ emp.rol }})</span>
+
+            <a href="/jefe/horarios/{{ emp.id }}" class="btn-editar btn-sm">Editar horario</a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <!-- Botón al final -->
+    <a href="/jefe" class="btn-volver">Volver al menú</a>
+</div>
+
+{% endblock %}
