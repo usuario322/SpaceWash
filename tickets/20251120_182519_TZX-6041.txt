@@ -1,0 +1,13 @@
+
+--- Ticket de registro ---
+Fecha/Hora: 2025-11-20 18:25:19
+Administrador: Admin General
+
+Vehículo: Taxi
+Propietario: Silvia Hernández Ríos
+CURP: HERS830912MDFSLV01
+Placas: TZX-6041
+Modelo: TZX-6041
+Prioridad: 5
+Precio aplicado: $50.00
+---------------------------
