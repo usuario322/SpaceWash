@@ -1,0 +1,31 @@
+name: Despliegue de Flask en Azure
+
+on:
+  push:
+    branches:
+      - main  
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Desplegar en Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'SpaceWash' # 👈 Reemplaza por el nombre exacto de tu App en Azure
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+          startup-command: 'gunicorn --bind=0.0.0.0 --timeout 600 app:app'
