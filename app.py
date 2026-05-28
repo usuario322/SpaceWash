@@ -1,32 +1,35 @@
-from datetime import datetime
-from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, session, url_for, flash
-from flask import send_file
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
 import io
+import os
 import random
 import string
+from datetime import datetime, timedelta
 import pymysql
-
+from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 app = Flask(__name__)
 app.secret_key = "clave_secreta_para_sesiones"
+
 # -------------------------------
 # CONFIGURACIÓN DE LA BASE DE DATOS
 # -------------------------------
 def get_db_connection():
-    conn = pymysql.connect(
-        host='localhost',
-        user='root',
-        password='',
-        database='spacewashh_db',
-        cursorclass=pymysql.cursors.DictCursor
-    )
-    return conn
-
+    try:
+        conn = pymysql.connect(
+            host='localhost',  # Cambiar por la IP o endpoint de tu base de datos en la nube más adelante
+            user='root',
+            password='',
+            database='spacewashh_db',
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=5  # Evita que la app se quede colgada infinitamente si no conecta
+        )
+        return conn
+    except Exception as e:
+        print(f"❌ Error crítico de conexión a la base de datos: {e}")
+        return None
 
 # -------------------------------
 # RUTA DE PRUEBA
@@ -35,7 +38,7 @@ def get_db_connection():
 def index():
     return render_template("login.html")
 
-#login
+# login
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -43,13 +46,17 @@ def login():
         password_form = request.form["password"]
 
         conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        if not conn:
+            return "Error del sistema: No se pudo establecer conexión con la base de datos."
 
-        # Buscamos al usuario, sin validar todavía si está activo
-        cursor.execute("SELECT * FROM usuarios WHERE usuario=%s AND password=%s",
-                       (usuario_form, password_form))
-        user = cursor.fetchone()
-        conn.close()
+        try:
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
+            # Buscamos al usuario, sin validar todavía si está activo
+            cursor.execute("SELECT * FROM usuarios WHERE usuario=%s AND password=%s",
+                           (usuario_form, password_form))
+            user = cursor.fetchone()
+        finally:
+            conn.close()
 
         if not user:
             return "Usuario o contraseña incorrectos"
@@ -76,7 +83,7 @@ def login():
     return render_template("login.html")
 
 
-#paneles
+# paneles
 @app.route("/admin")
 def admin_panel():
     if "rol" not in session or session["rol"] != "administrador":
@@ -101,21 +108,26 @@ def logout():
     session.clear()
     return redirect("/")
 
-#formulario de cobros
+# formulario de cobros
 @app.route("/admin/cobro")
 def admin_cobro():
     if "rol" not in session or session["rol"] != "administrador":
         return redirect("/")
 
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT tv.id, tv.tipo, pv.precio, pv.precio_promocion, pv.dias_promocion
-        FROM tipos_vehiculo tv
-        LEFT JOIN precios_vehiculo pv ON tv.id = pv.tipo_id
-    """)
-    tipos = cursor.fetchall()
-    conn.close()
+    if not conn:
+        return "Error al conectar con la base de datos."
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT tv.id, tv.tipo, pv.precio, pv.precio_promocion, pv.dias_promocion
+            FROM tipos_vehiculo tv
+            LEFT JOIN precios_vehiculo pv ON tv.id = pv.tipo_id
+        """)
+        tipos = cursor.fetchall()
+    finally:
+        conn.close()
 
     # Traducir el día actual
     hoy_en = datetime.now().strftime("%A").lower()
@@ -151,17 +163,21 @@ def admin_cobro_post():
     tipo_id = int(request.form["tipo"])
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    
-    # Traer precio y promociones
-    cursor.execute("""
-        SELECT tv.*, pv.precio AS precio_general, pv.precio_promocion, pv.dias_promocion
-        FROM tipos_vehiculo tv
-        LEFT JOIN precios_vehiculo pv ON tv.id = pv.tipo_id
-        WHERE tv.id=%s
-    """, (tipo_id,))
-    tipo = cursor.fetchone()
-    conn.close()
+    if not conn:
+        return "Error al conectar con la base de datos."
+
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # Traer precio y promociones
+        cursor.execute("""
+            SELECT tv.*, pv.precio AS precio_general, pv.precio_promocion, pv.dias_promocion
+            FROM tipos_vehiculo tv
+            LEFT JOIN precios_vehiculo pv ON tv.id = pv.tipo_id
+            WHERE tv.id=%s
+        """, (tipo_id,))
+        tipo = cursor.fetchone()
+    finally:
+        conn.close()
 
     # calcular precio final según promoción
     hoy = datetime.now().strftime('%A').lower()
@@ -178,7 +194,7 @@ def admin_cobro_post():
     return redirect(f"/admin/cobro/pago/{tipo_id}")
 ##
 
-#ruta nueva tipo de pago
+# ruta nueva tipo de pago
 @app.route("/admin/cobro/pago/<int:tipo_id>")
 def admin_cobro_pago(tipo_id):
     if "rol" not in session or session["rol"] != "administrador":
@@ -200,11 +216,6 @@ def admin_cobro_pago_post(tipo_id):
     return redirect(f"/admin/registrar/{tipo_id}")
 
 
-# Formulario registro
-import os
-from datetime import datetime
-from flask import session, redirect, flash, render_template, request
-
 # GET: Formulario de registro
 @app.route("/admin/registrar/<int:tipo_id>")
 def admin_registrar(tipo_id):
@@ -212,25 +223,29 @@ def admin_registrar(tipo_id):
         return redirect("/")
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    # Traer datos del tipo de vehículo con precios desde precios_vehiculo
-    cursor.execute("""
-        SELECT pv.id, pv.tipo_id, pv.precio, pv.precio_promocion, pv.dias_promocion
-        FROM precios_vehiculo pv
-        WHERE pv.tipo_id = %s
-    """, (tipo_id,))
-    tipo_precio = cursor.fetchone()
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-    # Traer nombre del tipo de vehículo desde tipos_vehiculo
-    cursor.execute("SELECT tipo FROM tipos_vehiculo WHERE id=%s", (tipo_id,))
-    tipo_nombre = cursor.fetchone()["tipo"]
+        # Traer datos del tipo de vehículo con precios desde precios_vehiculo
+        cursor.execute("""
+            SELECT pv.id, pv.tipo_id, pv.precio, pv.precio_promocion, pv.dias_promocion
+            FROM precios_vehiculo pv
+            WHERE pv.tipo_id = %s
+        """, (tipo_id,))
+        tipo_precio = cursor.fetchone()
 
-    # Obtener prioridad
-    cursor.execute("SELECT COUNT(*) AS total FROM vehiculos")
-    prioridad = cursor.fetchone()["total"] + 1
+        # Traer nombre del tipo de vehículo desde tipos_vehiculo
+        cursor.execute("SELECT tipo FROM tipos_vehiculo WHERE id=%s", (tipo_id,))
+        tipo_nombre = cursor.fetchone()["tipo"]
 
-    conn.close()
+        # Obtener prioridad
+        cursor.execute("SELECT COUNT(*) AS total FROM vehiculos")
+        prioridad = cursor.fetchone()["total"] + 1
+    finally:
+        conn.close()
 
     # Día de la semana en español
     dias_semana = {
@@ -280,48 +295,54 @@ def admin_registrar_post(tipo_id):
         return redirect(f"/admin/registrar/{tipo_id}")
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    # Obtener prioridad
-    cursor.execute("SELECT COUNT(*) AS total FROM vehiculos")
-    prioridad = cursor.fetchone()["total"] + 1
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-    fecha = datetime.now()
+        # Obtener prioridad
+        cursor.execute("SELECT COUNT(*) AS total FROM vehiculos")
+        prioridad = cursor.fetchone()["total"] + 1
 
-    # Obtener precio aplicado hoy y tipo desde la BD
-    cursor.execute("""
-        SELECT pv.precio, pv.precio_promocion, pv.dias_promocion, t.tipo
-        FROM precios_vehiculo pv
-        JOIN tipos_vehiculo t ON pv.tipo_id = t.id
-        WHERE pv.tipo_id=%s
-    """, (tipo_id,))
-    tipo_precio = cursor.fetchone()
+        fecha = datetime.now()
 
-    # Día de la semana en español
-    dias_semana = {
-        "Monday": "lunes",
-        "Tuesday": "martes",
-        "Wednesday": "miercoles",
-        "Thursday": "jueves",
-        "Friday": "viernes",
-        "Saturday": "sabado",
-        "Sunday": "domingo"
-    }
-    hoy = dias_semana[datetime.now().strftime("%A")]
+        # Obtener precio aplicado hoy y tipo desde la BD
+        cursor.execute("""
+            SELECT pv.precio, pv.precio_promocion, pv.dias_promocion, t.tipo
+            FROM precios_vehiculo pv
+            JOIN tipos_vehiculo t ON pv.tipo_id = t.id
+            WHERE pv.tipo_id=%s
+        """, (tipo_id,))
+        tipo_precio = cursor.fetchone()
 
-    # Calcular precio final
-    precio_final = tipo_precio['precio']
-    if tipo_precio['dias_promocion']:
-        dias = [d.strip().lower() for d in tipo_precio['dias_promocion'].split(',')]
-        if hoy in dias and tipo_precio['precio_promocion']:
-            precio_final = tipo_precio['precio_promocion']
+        # Día de la semana en español
+        dias_semana = {
+            "Monday": "lunes",
+            "Tuesday": "martes",
+            "Wednesday": "miercoles",
+            "Thursday": "jueves",
+            "Friday": "viernes",
+            "Saturday": "sabado",
+            "Sunday": "domingo"
+        }
+        hoy = dias_semana[datetime.now().strftime("%A")]
 
-    # Insertar vehículo en la tabla
-    cursor.execute("""
-        INSERT INTO vehiculos (propietario, curp, placas, modelo, tipo_id, prioridad, fecha_ingreso)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """, (propietario, curp, placas, modelo, tipo_id, prioridad, fecha))
-    conn.commit()
+        # Calcular precio final
+        precio_final = tipo_precio['precio']
+        if tipo_precio['dias_promocion']:
+            dias = [d.strip().lower() for d in tipo_precio['dias_promocion'].split(',')]
+            if hoy in dias and tipo_precio['precio_promocion']:
+                precio_final = tipo_precio['precio_promocion']
+
+        # Insertar vehículo en la tabla
+        cursor.execute("""
+            INSERT INTO vehiculos (propietario, curp, placas, modelo, tipo_id, prioridad, fecha_ingreso)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (propietario, curp, placas, modelo, tipo_id, prioridad, fecha))
+        conn.commit()
+    finally:
+        conn.close()
 
     # Generar ticket como archivo .txt
     admin_nombre = session.get('nombre', 'Administrador')
@@ -351,104 +372,113 @@ Precio aplicado: ${precio_final}
     with open(os.path.join(tickets_dir, filename), "w", encoding="utf-8") as f:
         f.write(ticket_text)
 
-    conn.close()
     flash(f"✅ Vehículo registrado correctamente. Ticket guardado como {filename}.")
     return redirect("/admin/vehiculos")
 
-#fin reigistro y cobro
+# fin reigistro y cobro
 
-#lista de vehiculos
+# lista de vehiculos
 @app.route("/admin/vehiculos")
 def admin_lista_vehiculos():
     if "rol" not in session or session["rol"] != "administrador":
         return redirect("/")
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    # Solo mostrar vehículos que no estén entregados
-    cursor.execute("""
-        SELECT v.*, t.tipo 
-        FROM vehiculos v
-        JOIN tipos_vehiculo t ON v.tipo_id = t.id
-        WHERE v.estatus != 'entregado'
-        ORDER BY prioridad ASC
-    """)
-    vehiculos = cursor.fetchall()
-    conn.close()
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # Solo mostrar vehículos que no estén entregados
+        cursor.execute("""
+            SELECT v.*, t.tipo 
+            FROM vehiculos v
+            JOIN tipos_vehiculo t ON v.tipo_id = t.id
+            WHERE v.estatus != 'entregado'
+            ORDER BY prioridad ASC
+        """)
+        vehiculos = cursor.fetchall()
+    finally:
+        conn.close()
 
     return render_template("admin_lista_vehiculos.html", vehiculos=vehiculos)
 
 
-#vehiculos listos para entregar
+# vehiculos listos para entregar
 @app.route("/admin/entregas")
 def admin_entregas():
     if "rol" not in session or session["rol"] != "administrador":
         return redirect("/")
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    cursor.execute("""
-        SELECT v.id, v.propietario, v.placas, v.modelo, t.tipo
-        FROM vehiculos v
-        JOIN tipos_vehiculo t ON v.tipo_id = t.id
-        WHERE v.estatus = 'listo para entregar'
-    """)
-
-    vehiculos = cursor.fetchall()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT v.id, v.propietario, v.placas, v.modelo, t.tipo
+            FROM vehiculos v
+            JOIN tipos_vehiculo t ON v.tipo_id = t.id
+            WHERE v.estatus = 'listo para entregar'
+        """)
+        vehiculos = cursor.fetchall()
+    finally:
+        conn.close()
 
     return render_template("admin_entregas.html", vehiculos=vehiculos)
 
-#entregar y borrar datos del vehiculo
+# entregar y borrar datos del vehiculo
 @app.route("/admin/entregar/<int:vehiculo_id>", methods=["POST"])
 def admin_entregar_vehiculo(vehiculo_id):
     if "rol" not in session or session["rol"] != "administrador":
         return redirect("/")
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    # obtener tipo del vehículo para estadística futura
-    cursor.execute("""
-        SELECT t.tipo 
-        FROM vehiculos v
-        JOIN tipos_vehiculo t ON v.tipo_id = t.id
-        WHERE v.id=%s
-    """, (vehiculo_id,))
-    result = cursor.fetchone()
-    tipo = result["tipo"]
+    try:
+        cursor = conn.cursor()
+        # obtener tipo del vehículo para estadística futura
+        cursor.execute("""
+            SELECT t.tipo 
+            FROM vehiculos v
+            JOIN tipos_vehiculo t ON v.tipo_id = t.id
+            WHERE v.id=%s
+        """, (vehiculo_id,))
+        result = cursor.fetchone()
+        tipo = result["tipo"]
 
-    fecha = datetime.now()
+        fecha = datetime.now()
 
-    # guardar en tabla de entregas
-    cursor.execute("""
-        INSERT INTO entregas (tipo_vehiculo, fecha_entrega)
-        VALUES (%s, %s)
-    """, (tipo, fecha))
+        # guardar en tabla de entregas
+        cursor.execute("""
+            INSERT INTO entregas (tipo_vehiculo, fecha_entrega)
+            VALUES (%s, %s)
+        """, (tipo, fecha))
 
-    # actualizar vehículo: limpiar datos y marcar entregado
-    cursor.execute("""
-        UPDATE vehiculos
-        SET propietario='ENTREGADO', curp='ENTREGADO', placas='ENTREGADO', estatus='entregado'
-        WHERE id=%s
-    """, (vehiculo_id,))
-
-    conn.commit()
-    conn.close()
+        # actualizar vehículo: limpiar datos y marcar entregado
+        cursor.execute("""
+            UPDATE vehiculos
+            SET propietario='ENTREGADO', curp='ENTREGADO', placas='ENTREGADO', estatus='entregado'
+            WHERE id=%s
+        """, (vehiculo_id,))
+        conn.commit()
+    finally:
+        conn.close()
 
     return redirect("/admin/entregas")
 
 
-#formulario de registro de empleados (jefe)
+# formulario de registro de empleados (jefe)
 @app.route('/jefe/registro_empleado')
 def registro_empleado():
     if 'rol' not in session or session['rol'] != 'jefe':
         return redirect('/login')
     return render_template('registro_empleado.html')
 
-#registrar empleados
+# registrar empleados
 @app.route('/jefe/registro_empleado', methods=['POST'])
 def registro_empleado_post():
     if 'rol' not in session or session['rol'] != 'jefe':
@@ -465,34 +495,43 @@ def registro_empleado_post():
     caracteres = string.ascii_letters + string.digits
     password = ''.join(random.choice(caracteres) for _ in range(8))
 
-    # Insertar en la BD
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO usuarios (nombre, usuario, password, rol)
-        VALUES (%s, %s, %s, %s)
-    """, (nombre, usuario, password, rol))
-    conn.commit()
-    conn.close()
+    if not conn:
+        return "Error al conectar con la base de datos."
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO usuarios (nombre, usuario, password, rol)
+            VALUES (%s, %s, %s, %s)
+        """, (nombre, usuario, password, rol))
+        conn.commit()
+    finally:
+        conn.close()
 
     return f"Empleado registrado exitosamente! Usuario: {usuario} | Contraseña: {password}"
 
 
-#Horarios
+# Horarios
 @app.route('/jefe/horarios')
 def horarios():
     if 'rol' not in session or session['rol'] != 'jefe':
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-    SELECT id, nombre, rol 
-    FROM usuarios 
-    WHERE activo=1 AND rol NOT IN ('jefe')
-""")
-    empleados = cursor.fetchall()
-    conn.close()
+    if not conn:
+        return "Error al conectar con la base de datos."
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, nombre, rol 
+            FROM usuarios 
+            WHERE activo=1 AND rol NOT IN ('jefe')
+        """)
+        empleados = cursor.fetchall()
+    finally:
+        conn.close()
 
     return render_template('horarios.html', empleados=empleados)
 
@@ -502,18 +541,21 @@ def editar_horario(empleado_id):
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    cursor.execute("SELECT * FROM usuarios WHERE id=%s AND activo=1", (empleado_id,))
-    empleado = cursor.fetchone()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM usuarios WHERE id=%s AND activo=1", (empleado_id,))
+        empleado = cursor.fetchone()
 
-    if not empleado:
+        if not empleado:
+            return "Empleado no encontrado"
+
+        cursor.execute("SELECT * FROM horarios_empleados WHERE usuario_id=%s", (empleado_id,))
+        horario = cursor.fetchone()
+    finally:
         conn.close()
-        return "Empleado no encontrado"
-
-    cursor.execute("SELECT * FROM horarios_empleados WHERE usuario_id=%s", (empleado_id,))
-    horario = cursor.fetchone()
-    conn.close()
 
     return render_template('editar_horario.html', empleado=empleado, horario=horario)
 
@@ -533,71 +575,72 @@ def guardar_horario():
         return "Error: La hora de comida debe estar dentro del horario laboral."
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    cursor.execute("SELECT id FROM horarios_empleados WHERE usuario_id=%s", (usuario_id,))
-    existe = cursor.fetchone()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM horarios_empleados WHERE usuario_id=%s", (usuario_id,))
+        existe = cursor.fetchone()
 
-    if existe:
-        cursor.execute("""
-            UPDATE horarios_empleados
-            SET hora_entrada=%s, hora_salida=%s, hora_comida=%s, dias_descanso=%s
-            WHERE usuario_id=%s
-        """, (hora_entrada, hora_salida, hora_comida, dia_descanso, usuario_id))
-    else:
-        cursor.execute("""
-            INSERT INTO horarios_empleados (usuario_id, hora_entrada, hora_salida, hora_comida, dias_descanso)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (usuario_id, hora_entrada, hora_salida, hora_comida, dia_descanso))
-
-    conn.commit()
-    conn.close()
+        if existe:
+            cursor.execute("""
+                UPDATE horarios_empleados
+                SET hora_entrada=%s, hora_salida=%s, hora_comida=%s, dias_descanso=%s
+                WHERE usuario_id=%s
+            """, (hora_entrada, hora_salida, hora_comida, dia_descanso, usuario_id))
+        else:
+            cursor.execute("""
+                INSERT INTO horarios_empleados (usuario_id, hora_entrada, hora_salida, hora_comida, dias_descanso)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (usuario_id, hora_entrada, hora_salida, hora_comida, dia_descanso))
+        conn.commit()
+    finally:
+        conn.close()
 
     return redirect('/jefe/horarios')
 
-#Fin horarios
+# Fin horarios
 
-#listar empleados activos
+# listar empleados activos
 @app.route('/jefe/empleados')
 def listar_empleados():
     if 'rol' not in session or session['rol'] != 'jefe':
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    # Empleados activos
-    cursor.execute("""
-        SELECT 
-            u.id,
-            u.nombre,
-            u.rol,
-            u.usuario,
-            u.password,
-            h.hora_entrada,
-            h.hora_salida,
-            h.hora_comida,
-            h.dias_descanso
-        FROM usuarios u
-        LEFT JOIN horarios_empleados h
-        ON u.id = h.usuario_id
-        WHERE u.activo = 1 AND u.rol NOT IN ('jefe')
-    """)
-    empleados = cursor.fetchall()
+    try:
+        cursor = conn.cursor()
+        # Empleados activos
+        cursor.execute("""
+            SELECT 
+                u.id,
+                u.nombre,
+                u.rol,
+                u.usuario,
+                u.password,
+                h.hora_entrada,
+                h.hora_salida,
+                h.hora_comida,
+                h.dias_descanso
+            FROM usuarios u
+            LEFT JOIN horarios_empleados h ON u.id = h.usuario_id
+            WHERE u.activo = 1 AND u.rol NOT IN ('jefe')
+        """)
+        empleados = cursor.fetchall()
 
-    # 🔽 NUEVO: empleados dados de baja
-    cursor.execute("""
-        SELECT 
-            id,
-            nombre,
-            usuario,
-            rol
-        FROM usuarios
-        WHERE activo = 0
-    """)
-    empleados_baja = cursor.fetchall()
-
-    conn.close()
+        # 🔽 empleados dados de baja
+        cursor.execute("""
+            SELECT id, nombre, usuario, rol
+            FROM usuarios
+            WHERE activo = 0
+        """)
+        empleados_baja = cursor.fetchall()
+    finally:
+        conn.close()
 
     return render_template(
         'empleados.html',
@@ -606,51 +649,66 @@ def listar_empleados():
     )
 
 
-#dar de baja a los empleados 
+# dar de baja a los empleados 
 @app.route('/jefe/dar_baja/<int:id>') 
 def dar_baja_empleado(id): 
-    if 'rol' not in session or session['rol'] != 'jefe': return redirect('/login') 
+    if 'rol' not in session or session['rol'] != 'jefe': 
+        return redirect('/login') 
+    
     conn = get_db_connection() 
-    cursor = conn.cursor() 
-    # Baja lógica: se marca como inactivo 
-    cursor.execute("UPDATE usuarios SET activo=0 WHERE id=%s", (id,)) 
-    conn.commit() 
-    conn.close() 
+    if not conn:
+        return "Error al conectar con la base de datos."
+
+    try:
+        cursor = conn.cursor() 
+        # Baja lógica: se marca como inactivo 
+        cursor.execute("UPDATE usuarios SET activo=0 WHERE id=%s", (id,)) 
+        conn.commit() 
+    finally:
+        conn.close() 
     return redirect('/jefe/empleados')
 
-#reactivar empleados
+# reactivar empleados
 @app.route('/jefe/reactivar/<int:id>')
 def reactivar_empleado(id):
     if 'rol' not in session or session['rol'] != 'jefe':
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE usuarios SET activo=1 WHERE id=%s", (id,))
-    conn.commit()
-    conn.close()
+    if not conn:
+        return "Error al conectar con la base de datos."
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE usuarios SET activo=1 WHERE id=%s", (id,))
+        conn.commit()
+    finally:
+        conn.close()
 
     return redirect('/jefe/empleados')
 
-#estadisticas de vehiculos
+# estadisticas de vehiculos
 @app.route('/jefe/historial')
 def historial():
     if 'rol' not in session or session['rol'] != 'jefe':
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    # Conteo por tipo
-    cursor.execute("""
-        SELECT tv.id, tv.tipo, COUNT(v.id) AS total
-        FROM tipos_vehiculo tv
-        LEFT JOIN vehiculos v ON v.tipo_id = tv.id
-        GROUP BY tv.id, tv.tipo
-    """)
-    tipos = cursor.fetchall()
-
-    conn.close()
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # Conteo por tipo
+        cursor.execute("""
+            SELECT tv.id, tv.tipo, COUNT(v.id) AS total
+            FROM tipos_vehiculo tv
+            LEFT JOIN vehiculos v ON v.tipo_id = tv.id
+            GROUP BY tv.id, tv.tipo
+        """)
+        tipos = cursor.fetchall()
+    finally:
+        conn.close()
 
     if all(t['total'] == 0 for t in tipos):
         mensaje = "Historial vacío"
@@ -676,23 +734,28 @@ def historial_semana(tipo_id):
     end_week = start_week + timedelta(days=6)
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    # Obtener nombre del tipo de vehículo
-    cursor.execute("SELECT tipo FROM tipos_vehiculo WHERE id=%s", (tipo_id,))
-    tipo = cursor.fetchone()
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-    # Obtener conteo por día
-    cursor.execute("""
-        SELECT DATE(fecha_ingreso) AS fecha, COUNT(id) AS total
-        FROM vehiculos
-        WHERE tipo_id=%s
-        AND fecha_ingreso BETWEEN %s AND %s
-        GROUP BY fecha
-    """, (tipo_id, start_week, end_week))
+        # Obtener nombre del tipo de vehículo
+        cursor.execute("SELECT tipo FROM tipos_vehiculo WHERE id=%s", (tipo_id,))
+        tipo = cursor.fetchone()
 
-    dias = cursor.fetchall()
-    conn.close()
+        # Obtener conteo por día
+        cursor.execute("""
+            SELECT DATE(fecha_ingreso) AS fecha, COUNT(id) AS total
+            FROM vehiculos
+            WHERE tipo_id=%s
+            AND fecha_ingreso BETWEEN %s AND %s
+            GROUP BY fecha
+        """, (tipo_id, start_week, end_week))
+
+        dias = cursor.fetchall()
+    finally:
+        conn.close()
 
     # Convertir a diccionario para mapear días vacíos
     dias_dict = {d['fecha'].strftime("%Y-%m-%d"): d['total'] for d in dias}
@@ -722,73 +785,79 @@ def historial_semana(tipo_id):
     )
 
 
-#ver y registrar/modificar precios
+# ver y registrar/modificar precios
 @app.route('/jefe/precios')
 def ver_precios():
     if 'rol' not in session or session['rol'] != 'jefe':
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    cursor.execute("""
-        SELECT tv.id AS tipo_id, tv.tipo,
-               IFNULL(pv.precio, tv.precio_base) AS precio_general,
-               IFNULL(pv.precio_promocion, 0) AS precio_promocion,
-               IFNULL(pv.dias_promocion, '') AS dias_promocion
-        FROM tipos_vehiculo tv
-        LEFT JOIN precios_vehiculo pv ON tv.id = pv.tipo_id
-    """)
-    precios = cursor.fetchall()
-
-    conn.close()
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            SELECT tv.id AS tipo_id, tv.tipo,
+                   IFNULL(pv.precio, tv.precio_base) AS precio_general,
+                   IFNULL(pv.precio_promocion, 0) AS precio_promocion,
+                   IFNULL(pv.dias_promocion, '') AS dias_promocion
+            FROM tipos_vehiculo tv
+            LEFT JOIN precios_vehiculo pv ON tv.id = pv.tipo_id
+        """)
+        precios = cursor.fetchall()
+    finally:
+        conn.close()
 
     return render_template('precios.html', precios=precios)
 
 
-#guardar precios
+# guardar precios
 @app.route('/jefe/precios', methods=['POST'])
 def guardar_precios():
     if 'rol' not in session or session['rol'] != 'jefe':
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    cursor.execute("SELECT id FROM tipos_vehiculo")
-    tipos = cursor.fetchall()
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("SELECT id FROM tipos_vehiculo")
+        tipos = cursor.fetchall()
 
-    for t in tipos:
-        tipo_id = t["id"]
+        for t in tipos:
+            tipo_id = t["id"]
 
-        # Esto puede venir vacío o sin cambios
-        precio_general = request.form.get(f'precio_general_{tipo_id}', None)
-        precio_promocion = request.form.get(f'precio_promocion_{tipo_id}', None)
-        dias = request.form.getlist(f'dias_{tipo_id}')  # lista
-        dias_txt = ",".join(dias)
+            precio_general = request.form.get(f'precio_general_{tipo_id}', None)
+            precio_promocion = request.form.get(f'precio_promocion_{tipo_id}', None)
+            dias = request.form.getlist(f'dias_{tipo_id}')  # lista
+            dias_txt = ",".join(dias)
 
-        # Validación del flujo alterno
-        if dias_txt == "" and precio_promocion not in ("", None):
-            flash("Advertencia: Debe seleccionar días para aplicar la promoción.", "warning")
-            continue
+            # Validación del flujo alterno
+            if dias_txt == "" and precio_promocion not in ("", None):
+                flash("Advertencia: Debe seleccionar días para aplicar la promoción.", "warning")
+                continue
 
-        cursor.execute("SELECT * FROM precios_vehiculo WHERE tipo_id=%s", (tipo_id,))
-        existe = cursor.fetchone()
+            cursor.execute("SELECT * FROM precios_vehiculo WHERE tipo_id=%s", (tipo_id,))
+            existe = cursor.fetchone()
 
-        if existe:
-            cursor.execute("""
-                UPDATE precios_vehiculo
-                SET precio=%s, precio_promocion=%s, dias_promocion=%s
-                WHERE tipo_id=%s
-            """, (precio_general, precio_promocion, dias_txt, tipo_id))
-        else:
-            cursor.execute("""
-                INSERT INTO precios_vehiculo (tipo_id, precio, precio_promocion, dias_promocion)
-                VALUES (%s, %s, %s, %s)
-            """, (tipo_id, precio_general, precio_promocion, dias_txt))
-
-    conn.commit()
-    conn.close()
+            if existe:
+                cursor.execute("""
+                    UPDATE precios_vehiculo
+                    SET precio=%s, precio_promocion=%s, dias_promocion=%s
+                    WHERE tipo_id=%s
+                """, (precio_general, precio_promocion, dias_txt, tipo_id))
+            else:
+                cursor.execute("""
+                    INSERT INTO precios_vehiculo (tipo_id, precio, precio_promocion, dias_promocion)
+                    VALUES (%s, %s, %s, %s)
+                """, (tipo_id, precio_general, precio_promocion, dias_txt))
+        conn.commit()
+    finally:
+        conn.close()
+        
     return redirect('/jefe/precios')
 
 # Listar vehículos para empleados operativos
@@ -800,18 +869,22 @@ def listar_vehiculos_operativo():
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    # Solo mostrar vehículos que todavía no estén listos para entregar ni entregados
-    cursor.execute("""
-        SELECT v.id, v.propietario, v.placas, v.modelo, v.estatus, tv.tipo AS tipo_vehiculo
-        FROM vehiculos v
-        JOIN tipos_vehiculo tv ON v.tipo_id = tv.id
-        WHERE v.estatus IN ('en espera', 'en lavado')
-        ORDER BY v.prioridad ASC
-    """)
-    vehiculos = cursor.fetchall()
-    conn.close()
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # Solo mostrar vehículos que todavía no estén listos para entregar ni entregados
+        cursor.execute("""
+            SELECT v.id, v.propietario, v.placas, v.modelo, v.estatus, tv.tipo AS tipo_vehiculo
+            FROM vehiculos v
+            JOIN tipos_vehiculo tv ON v.tipo_id = tv.id
+            WHERE v.estatus IN ('en espera', 'en lavado')
+            ORDER BY v.prioridad ASC
+        """)
+        vehiculos = cursor.fetchall()
+    finally:
+        conn.close()
 
     return render_template('vehiculos_operativo.html', vehiculos=vehiculos)
 
@@ -828,79 +901,90 @@ def cambiar_estatus():
     vehiculo_id = int(request.form['vehiculo_id'])
     nuevo_estatus = request.form['estatus']
 
-    from datetime import datetime
     fecha_hora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    # Actualizar estatus
-    cursor.execute("""
-        UPDATE vehiculos
-        SET estatus=%s
-        WHERE id=%s
-    """, (nuevo_estatus, vehiculo_id))
+    try:
+        cursor = conn.cursor()
+        # Actualizar estatus
+        cursor.execute("""
+            UPDATE vehiculos
+            SET estatus=%s
+            WHERE id=%s
+        """, (nuevo_estatus, vehiculo_id))
 
-    # Registrar movimiento en historial
-    cursor.execute("""
-        INSERT INTO historial_movimientos (vehiculo_id, empleado_id, estatus, fecha_hora)
-        VALUES (%s, %s, %s, %s)
-    """, (vehiculo_id, empleado_id, nuevo_estatus, fecha_hora))
-
-    conn.commit()
-    conn.close()
+        # Registrar movimiento en historial
+        cursor.execute("""
+            INSERT INTO historial_movimientos (vehiculo_id, empleado_id, estatus, fecha_hora)
+            VALUES (%s, %s, %s, %s)
+        """, (vehiculo_id, empleado_id, nuevo_estatus, fecha_hora))
+        conn.commit()
+    finally:
+        conn.close()
 
     # Redirigir para que la lista se actualice automáticamente
     return redirect('/operativo/vehiculos')
 
 
-#reporte de movimientos
+# reporte de movimientos
 @app.route('/reportes/movimientos')
 def reporte_movimientos():
     if 'rol' not in session or session['rol'] not in ['administrador','jefe']:
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    # Solo mostrar movimientos de vehículos NO entregados y solo cambios válidos
-    cursor.execute("""
-        SELECT hm.id, v.propietario, v.placas, v.modelo, tv.tipo AS tipo_vehiculo,
-               u.nombre AS empleado, hm.estatus, hm.fecha_hora
-        FROM historial_movimientos hm
-        JOIN vehiculos v ON hm.vehiculo_id = v.id
-        JOIN usuarios u ON hm.empleado_id = u.id
-        JOIN tipos_vehiculo tv ON v.tipo_id = tv.id
-        WHERE v.estatus != 'entregado'
-        AND hm.estatus IN ('en espera','en lavado','listo para entregar')
-        ORDER BY hm.fecha_hora DESC
-    """)
-    movimientos = cursor.fetchall()
-    conn.close()
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # Solo mostrar movimientos de vehículos NO entregados y solo cambios válidos
+        cursor.execute("""
+            SELECT hm.id, v.propietario, v.placas, v.modelo, tv.tipo AS tipo_vehiculo,
+                   u.nombre AS empleado, hm.estatus, hm.fecha_hora
+            FROM historial_movimientos hm
+            JOIN vehiculos v ON hm.vehiculo_id = v.id
+            JOIN usuarios u ON hm.empleado_id = u.id
+            JOIN tipos_vehiculo tv ON v.tipo_id = tv.id
+            WHERE v.estatus != 'entregado'
+            AND hm.estatus IN ('en espera','en lavado','listo para entregar')
+            ORDER BY hm.fecha_hora DESC
+        """)
+        movimientos = cursor.fetchall()
+    finally:
+        conn.close()
 
     return render_template('reporte_movimientos.html', movimientos=movimientos)
 
-#exportar pdf
+# exportar pdf
 @app.route('/reportes/movimientos/pdf')
 def exportar_movimientos_pdf():
     if 'rol' not in session or session['rol'] not in ['administrador','jefe']:
         return redirect('/login')
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    cursor.execute("""
-        SELECT hm.id, v.propietario, v.placas, v.modelo, tv.tipo AS tipo_vehiculo,
-               u.nombre AS empleado, hm.estatus, hm.fecha_hora
-        FROM historial_movimientos hm
-        JOIN vehiculos v ON hm.vehiculo_id = v.id
-        JOIN usuarios u ON hm.empleado_id = u.id
-        JOIN tipos_vehiculo tv ON v.tipo_id = tv.id
-        WHERE v.estatus != 'entregado'
-        AND hm.estatus IN ('en espera','en lavado','listo para entregar')
-        ORDER BY hm.fecha_hora DESC
-    """)
-    movimientos = cursor.fetchall()
-    conn.close()
+    if not conn:
+        return "Error al conectar con la base de datos."
+
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            SELECT hm.id, v.propietario, v.placas, v.modelo, tv.tipo AS tipo_vehiculo,
+                   u.nombre AS empleado, hm.estatus, hm.fecha_hora
+            FROM historial_movimientos hm
+            JOIN vehiculos v ON hm.vehiculo_id = v.id
+            JOIN usuarios u ON hm.empleado_id = u.id
+            JOIN tipos_vehiculo tv ON v.tipo_id = tv.id
+            WHERE v.estatus != 'entregado'
+            AND hm.estatus IN ('en espera','en lavado','listo para entregar')
+            ORDER BY hm.fecha_hora DESC
+        """)
+        movimientos = cursor.fetchall()
+    finally:
+        conn.close()
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=20, rightMargin=20)
@@ -957,28 +1041,32 @@ def empleados_horarios():
         return redirect("/login")
 
     conn = get_db_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    if not conn:
+        return "Error al conectar con la base de datos."
 
-    query = """
-        SELECT 
-            u.id,
-            u.nombre,
-            u.rol,
-            h.hora_entrada,
-            h.hora_salida,
-            h.hora_comida,
-            h.dias_descanso
-        FROM usuarios u
-        LEFT JOIN horarios_empleados h ON h.usuario_id = u.id
-        ORDER BY u.nombre ASC
-    """
-    cursor.execute(query)
-    empleados = cursor.fetchall()
-
-    conn.close()
+    try:
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        query = """
+            SELECT 
+                u.id,
+                u.nombre,
+                u.rol,
+                h.hora_entrada,
+                h.hora_salida,
+                h.hora_comida,
+                h.dias_descanso
+            FROM usuarios u
+            LEFT JOIN horarios_empleados h ON h.usuario_id = u.id
+            ORDER BY u.nombre ASC
+        """
+        cursor.execute(query)
+        empleados = cursor.fetchall()
+    finally:
+        conn.close()
 
     return render_template("empleados_horarios.html", empleados=empleados)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
-
+    # Configuración de puerto dinámica adaptada para entornos de producción en la nube (Azure)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
