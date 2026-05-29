@@ -19,11 +19,12 @@ app.secret_key = "clave_secreta_para_sesiones"
 def get_db_connection():
     try:
         conn = pymysql.connect(
-            host='localhost',  # Cambiar por la IP o endpoint de tu base de datos en la nube más adelante
-            user='root',
-            password='',
-            database='spacewashh_db',
-            cursorclass=pymysql.cursors.DictCursor,
+            host=os.environ.get('DB_HOST', 'localhost'),
+            user=os.environ.get('DB_USER', 'root'),
+            password=os.environ.get('DB_PASSWORD', ''),
+            database=os.environ.get('DB_NAME', 'spacewash_db'),
+            port=int(os.environ.get('DB_PORT', 3306)),
+            autocommit=True,
             connect_timeout=5  # Evita que la app se quede colgada infinitamente si no conecta
         )
         return conn
