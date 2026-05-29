@@ -18,6 +18,9 @@ app.secret_key = "clave_secreta_para_sesiones"
 # -------------------------------
 def get_db_connection():
     try:
+        # Evaluamos si estamos en Azure o Local para aplicar el SSL de manera inteligente
+        is_local = os.environ.get('DB_HOST') is None
+        
         conn = pymysql.connect(
             host=os.environ.get('DB_HOST', 'localhost'),
             user=os.environ.get('DB_USER', 'root'),
@@ -25,7 +28,8 @@ def get_db_connection():
             database=os.environ.get('DB_NAME', 'spacewash_db'),
             port=int(os.environ.get('DB_PORT', 3306)),
             autocommit=True,
-            connect_timeout=5  # Evita que la app se quede colgada infinitamente si no conecta
+            ssl=None if is_local else {},  # 
+            connect_timeout=5  
         )
         return conn
     except Exception as e:
