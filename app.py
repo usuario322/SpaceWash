@@ -18,21 +18,34 @@ app.secret_key = "clave_secreta_para_sesiones"
 # -------------------------------
 def get_db_connection():
     try:
-        # Evaluamos si estamos en Azure o Local para aplicar el SSL de manera inteligente
-        is_local = os.environ.get('DB_HOST') is None
+        db_host = os.environ.get('DB_HOST')
         
-        conn = pymysql.connect(
-            host=os.environ.get('DB_HOST', 'localhost'),
-            user=os.environ.get('DB_USER', 'root'),
-            password=os.environ.get('DB_PASSWORD', ''),
-            database=os.environ.get('DB_NAME', 'spacewash_db'),
-            port=int(os.environ.get('DB_PORT', 3306)),
-            autocommit=True,
-            ssl=None if is_local else {},  # 
-            connect_timeout=5  
-        )
+        # Si la variable DB_HOST existe y no es localhost, aplicamos el entorno de Azure
+        if db_host and db_host != 'localhost':
+            conn = pymysql.connect(
+                host=db_host,
+                user=os.environ.get('DB_USER', 'DBMYSA'),
+                password=os.environ.get('DB_PASSWORD', ''),
+                database=os.environ.get('DB_NAME', 'spacewash_db'),
+                port=int(os.environ.get('DB_PORT', 3306)),
+                autocommit=True,
+                ssl={'ssl': {}},  # <--- Habilita el cifrado TLS/SSL requerido por Azure
+                connect_timeout=10
+            )
+        else:
+            # Configuración para tu entorno local (XAMPP / MySQL local)
+            conn = pymysql.connect(
+                host='localhost',
+                user='root',
+                password='',
+                database='spacewash_db',
+                port=3306,
+                autocommit=True,
+                connect_timeout=5
+            )
         return conn
     except Exception as e:
+        # Imprime el error exacto en los logs de Azure sin tirar el contenedor
         print(f"❌ Error crítico de conexión a la base de datos: {e}")
         return None
 
