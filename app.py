@@ -541,7 +541,8 @@ def horarios():
         return "Error al conectar con la base de datos."
 
     try:
-        cursor = conn.cursor()
+        # 💡 CAMBIO: Agregar pymysql.cursors.DictCursor
+        cursor = conn.cursor(pymysql.cursors.DictCursor) 
         cursor.execute("""
             SELECT id, nombre, rol 
             FROM usuarios 
@@ -1054,7 +1055,6 @@ def exportar_movimientos_pdf():
 
 @app.route("/operativo/empleados_horarios")
 def empleados_horarios():
-    # Validar rol
     if "rol" not in session or session["rol"] != "operativo":
         return redirect("/login")
 
@@ -1063,16 +1063,12 @@ def empleados_horarios():
         return "Error al conectar con la base de datos."
 
     try:
+        # 💡 VERIFICA: Asegúrate de que use DictCursor (como se ve en el fragmento del final)
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         query = """
             SELECT 
-                u.id,
-                u.nombre,
-                u.rol,
-                h.hora_entrada,
-                h.hora_salida,
-                h.hora_comida,
-                h.dias_descanso
+                u.id, u.nombre, u.rol,
+                h.hora_entrada, h.hora_salida, h.hora_comida, h.dias_descanso
             FROM usuarios u
             LEFT JOIN horarios_empleados h ON h.usuario_id = u.id
             ORDER BY u.nombre ASC
